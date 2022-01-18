@@ -23,7 +23,7 @@ TEST = config.DEBUG
 sma_d = 2
 sma_l = 3
 # define the difference between buy/sell price
-added_val = 0.0002
+added_val = 0.0005
 # contain id of sell limit order
 order_id = 0
 in_position = False
@@ -142,9 +142,9 @@ async def twet_graph(tweet_content,fav):
     fig.savefig('tweettest.png',facecolor='#282828')
 
     # post graph on twitter and get id
-    #id = api.update_status_with_media(tweet_content,"tweettest.png").id
-    #if fav:
-    #    api.create_favorite(id)
+    id = api.update_status_with_media(tweet_content,"tweettest.png").id
+    if fav:
+        api.create_favorite(id)
 
     print("save graph")
 
@@ -254,21 +254,25 @@ def on_message(ws, message):
     # sell section
     if in_position:
         # retrieve sell limit order from binance
-        sorder = client.get_order(symbol=TRADE_SYMBOL,orderId=order_id)
+        if config.FUTURE:
+            sorder = client.futures_get_order(symbol=TRADE_SYMBOL,orderId=order_id)
+        else:
+            sorder = client.get_order(symbol=TRADE_SYMBOL,orderId=order_id)
         # check if order is filled
         if sorder['status'] == 'FILLED':
             in_position = False
 
-            # save graph (post on twitter)
-            # asyncio.run(twet_graph(str(sorder['price']),True))
-
             # save sell trade in trade.csv
             asyncio.run(save_trade("sell",sorder['price']))
+
+            # save graph (post on twitter)
+            asyncio.run(twet_graph(":)",True))
+
         else:  
             print("waiting for sell : ",sorder)
     else:
     # buy section
-        if sma > sma_long:
+        if (close > sma) & (close < sma_long):
             # defines the intervals that a price/stopPrice can be increased/decreased by
             # https://binance-docs.github.io/apidocs/delivery/en/#filters
             tickf = float(client.get_symbol_info(config.PAIR.upper())['filters'][0]["tickSize"])
@@ -298,7 +302,7 @@ def on_message(ws, message):
                     print("fail sell limit")
             else:
                 print("fail buy")
-    asyncio.run(twet_graph("test",True))
+    #asyncio.run(twet_graph("test",True))
     
 ws = websocket.WebSocketApp(SOCKET, on_open=on_open, on_close=on_close, on_message=on_message)
 ws.run_forever()
