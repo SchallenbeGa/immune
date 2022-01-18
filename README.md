@@ -1,5 +1,8 @@
 # AUTOMATE BINANCE BUY/SELL
-warning : use at ur own fckn risk
+
+* warning : use at ur own fckn risk
+* take care of fees : https://www.binance.com/en/fee/schedule (login to see your fee level)
+
 ## CONFIG.PY
 
    ### BINANCE
@@ -28,7 +31,7 @@ warning : use at ur own fckn risk
 
 ## IMPORT
 
-      pip install python-binance websocket-client aiofiles pandas asyncio aiocsv numpy mplfinance tweepy binance-futures-connector
+      pip install python-binance websocket-client aiofiles pandas asyncio aiocsv numpy mplfinance tweepy
       
 ## TWEETER API | Tweepy API V1.1
 
@@ -59,4 +62,3 @@ click on app and replace "setting" by "auth-settings" in url,
  * https://pypi.org/project/asyncio/
  * https://github.com/matplotlib/mplfinance
  * https://docs.tweepy.org/en/stable/
- * https://github.com/Binance-docs/binance-futures-connector-python
