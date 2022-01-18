@@ -7,4 +7,3 @@ aiocsv
 numpy
 mplfinance
 tweepy
-binance-futures-connector
