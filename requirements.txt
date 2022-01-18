@@ -1,0 +1,10 @@
+python-binance
+websocket-client
+aiofiles
+pandas
+asyncio
+aiocsv
+numpy
+mplfinance
+tweepy
+binance-futures-connector
