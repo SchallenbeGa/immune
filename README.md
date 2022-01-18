@@ -1,7 +1,7 @@
 # AUTOMATE BINANCE BUY/SELL
 
-warning : use at ur own fckn risk
-take care of fees : https://www.binance.com/en/fee/schedule (login to see your fee level)
+* warning : use at ur own fckn risk
+* take care of fees : https://www.binance.com/en/fee/schedule (login to see your fee level)
 
 ## CONFIG.PY
 
