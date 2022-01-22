@@ -7,3 +7,4 @@ aiocsv
 numpy
 mplfinance
 tweepy
+matplotlib

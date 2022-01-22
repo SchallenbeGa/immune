@@ -1,3 +1,5 @@
+import matplotlib
+matplotlib.use("Agg")
 import websocket, json, config, tweepy, aiofiles,pandas as pd,asyncio,numpy as np,mplfinance as mpf
 from binance.client import Client
 from binance.enums import *
@@ -20,16 +22,13 @@ TRADE_QUANTITY = config.QUANTITY
 TEST = config.DEBUG
 
 # get average price for x last trade
-sma_d = 3
-sma_l = 30
+sma_d = 2
+sma_l = 3
 # define the difference between buy/sell price
-added_val = 0.001
+added_val = 0.0008
 # contain id of sell limit order
 order_id = 0
 in_position = False
-
-#stock last price + added_val
-take_profit_future = 0
 
 # init client for binance api
 client = Client(config.API_KEY, config.API_SECRET, tld='com',testnet=config.DEBUG)
@@ -78,9 +77,6 @@ async def twet_graph(tweet_content,fav):
         gridcolor="#212121",
         rc={'xtick.color':'#f8f8f8','ytick.color':'#f8f8f8','axes.labelcolor':'#f8f8f8'})
 
-
-    
-
     # check if there is at least 1 trade
     if len(trade)>0 :
         for x in range(len(data)):
@@ -90,17 +86,19 @@ async def twet_graph(tweet_content,fav):
                 if (data.index.array[x].minute == trade.index.array[y].minute) & (data.index.array[x].hour == trade.index.array[y].hour) :
                     if(trade['Type'][y]=="buy"):
                         if not inCandleTrade:
-                            buys.append(trade['Price'][y]-added_val*2)
+                            buys.append(trade['Price'][y]-added_val)
                             inCandleTrade = True
                         else:
                             print("buy in same candle "+str(y))
                         n = True
                     else:
                         one_sell=True
-                        sells.append(trade['Price'][y]+added_val*2)
+                        sells.append(trade['Price'][y]+added_val)
                         n = True
-                #if len(buys)>len(sells):
-                #    sells.append(np.nan)
+                if len(buys)>len(sells):
+                    sells.append(np.nan)
+                elif len(buys)<len(sells):
+                    buys.append(np.nan)
             if not n:
                 buys.append(np.nan)
                 sells.append(np.nan)
@@ -137,10 +135,9 @@ async def twet_graph(tweet_content,fav):
             datetime_format="%d %H:%M:%S",
             xrotation=0,
             returnfig=True)
-
+       
     # save graph in png  
-    fig.savefig('tweettest.png',facecolor='#282828')
-
+    fig.savefig('tweettest.png',facecolor='#282828')    
     # post graph on twitter and get id
     if fav:
         id = api.update_status_with_media(tweet_content,"tweettest.png").id
@@ -159,8 +156,8 @@ async def save_trade(b_s,price):
 
 # save older candle in tst.csv
 async def save_data():
-    if config.FUTURE:
-        klines = client.futures_historical_klines(config.PAIR.upper(), Client.KLINE_INTERVAL_1MINUTE, "5 hour ago UTC")
+    if config.FUTURE: 
+        klines = client.futures_historical_klines(config.PAIR.upper(), Client.KLINE_INTERVAL_1MINUTE, "2 hour ago UTC")
     else:
         klines = client.get_historical_klines(config.PAIR.upper(), Client.KLINE_INTERVAL_1MINUTE, "1 hour ago UTC")
     async with aiofiles.open('tst.csv', mode='w') as f:
@@ -178,48 +175,36 @@ async def save_close(data):
         await f.write(contents)
 
 # place order on binance
-def order(limit,side, quantity=TRADE_QUANTITY, symbol=TRADE_SYMBOL,order_type=ORDER_TYPE_MARKET):
-    global order_id,take_profit_future
+def order(limit,side, quantity=TRADE_QUANTITY, symbol=TRADE_SYMBOL):
+    global order_id
     try:
-        # check if order has a price limit
-        if limit > 0:
-            # place limit order
-            if config.FUTURE:
-                order = client.futures_create_order(symbol=symbol,side=side,type=FUTURE_ORDER_TYPE_LIMIT,quantity=TRADE_QUANTITY,price=limit,timeInForce=TIME_IN_FORCE_GTC)
-                # order = client.futures_create_order(
-                #     symbol=symbol,
-                #     side=side,
-                #     type=FUTURE_ORDER_TYPE_STOP,
-                #     quantity=TRADE_QUANTITY,
-                #     price=take_profit_future,
-                #     stopPrice=take_profit_future,
-                #     closePosition=False,
-                #     stopLimitTimeInForce='GTC',
-                #     timeInForce=TIME_IN_FORCE_GTC)
-            else:
-                order = client.create_order(
+        # place limit order
+        if config.FUTURE:
+            client.futures_change_leverage(symbol=symbol, leverage=config.FUTURE_LEVERAGE)
+            if config.FUTURE_COIN: # COIN-M wip
+                order = client.futures_coin_create_order(
                     symbol=symbol,
                     side=side,
-                    type=ORDER_TYPE_LIMIT,
+                    type=FUTURE_ORDER_TYPE_LIMIT,
                     quantity=TRADE_QUANTITY,
                     price=limit,
                     timeInForce=TIME_IN_FORCE_GTC)
-        else:
-            # place market order
-            if config.FUTURE:
-                client.futures_change_leverage(symbol=symbol, leverage=config.FUTURE_LEVERAGE)
-                order = client.futures_create_order(symbol=symbol,side=side,type=order_type,quantity=TRADE_QUANTITY)
-                #order = client.futures_create_order(symbol=symbol,side=side,type=order_type, quantity=quantity)
-                # order = client.futures_create_order(symbol=symbol,
-                # side=SIDE_SELL,
-                # sidePosition="LONG",
-                # type=TAKE_PROFIT_MARKET,
-                # closePosition=False,
-                # stopPrice=take_profit_future,
-                # timeInForce=TIME_IN_FORCE_GTC)
-            else:
-                order = client.create_order(symbol=symbol,side=side,type=order_type, quantity=quantity)
-
+            else: # USD-M
+                order = client.futures_create_order(
+                    symbol=symbol,
+                    side=side,
+                    type=FUTURE_ORDER_TYPE_LIMIT,
+                    quantity=TRADE_QUANTITY,
+                    price=limit,
+                    timeInForce=TIME_IN_FORCE_GTC)
+        else: # SPOT BUY/SELL LIMIT
+            order = client.create_order(
+                symbol=symbol,
+                side=side,
+                type=ORDER_TYPE_LIMIT,
+                quantity=TRADE_QUANTITY,
+                price=limit,
+                timeInForce=TIME_IN_FORCE_GTC)
         print("sending order")
         print(order)
         order_id = order['orderId']
@@ -238,7 +223,7 @@ def on_close(ws):
     print('closed connection')
 
 def on_message(ws, message):
-    global in_position,order_id,api,added_val,sma_d,sma_l,take_profit_future
+    global in_position,order_id,api,added_val,sma_d,sma_l
 
     # retrieve last trade
     json_message = json.loads(message)  
@@ -256,48 +241,56 @@ def on_message(ws, message):
     data.index = pd.to_datetime(data.index)
 
     # calculate moving average
-    sma = data['Low'][-sma_d:].mean()
-    sma_long = data['High'][-sma_l:].mean()
+    sma = data['Close'][-sma_d:].mean()
+    sma_long = data['Close'][-sma_l:].mean()
+    sma_xtralong = data['Close'][-sma_l+sma_d:].mean()
 
     # retrieve last close price
+    # print(candle)
     close = float(candle['c'])
 
     #df = pd.DataFrame(client.futures_order_book(symbol=TRADE_SYMBOL))
     #print(df[['bids', 'asks']].head())
-    print("current price :",close)
+    print("current price :" + str(close))
     print("lower than : ",sma_long," higher than : ",sma)
     # sell section
     if in_position:
         # retrieve sell limit order from binance
         if config.FUTURE:
-            sorder = client.futures_get_order(symbol=TRADE_SYMBOL,orderId=order_id)
+            if config.FUTURE_COIN:
+                sorder = client.futures_coin_get_order(symbol=TRADE_SYMBOL,orderId=order_id)
+            else:
+                sorder = client.futures_get_order(symbol=TRADE_SYMBOL,orderId=order_id)
         else:
             sorder = client.get_order(symbol=TRADE_SYMBOL,orderId=order_id)
         # check if order is filled
-        if sorder['status'] == 'FILLED':
+        if (sorder['status'] == 'FILLED'):
             in_position = False
 
             # save sell trade in trade.csv
             asyncio.run(save_trade("sell",sorder['price']))
 
             # save graph (tweet content,post on twitter)
-            asyncio.run(twet_graph(":)",True))
+            asyncio.run(twet_graph(":)",False))
 
-        else:  
-            print("waiting for sell : ",sorder)
+        #else:  
+        #    print("waiting for sell : ",sorder)
     else:
     # buy section
-        if sma > sma_long:
+        if (close > sma) & (close < sma_long):
             # defines the intervals that a price/stopPrice can be increased/decreased by
             # https://binance-docs.github.io/apidocs/delivery/en/#filters
             tickf = float(client.get_symbol_info(config.PAIR.upper())['filters'][0]["tickSize"])
-            tickSize_limit = round_step_size(
+            tickSize_limit_sell = round_step_size(
                 close + added_val,
                 tickf)
-            take_profit_future = tickSize_limit
 
-            order_succeeded = order(0,SIDE_BUY, TRADE_QUANTITY, TRADE_SYMBOL)
-            if order_succeeded:
+            tickSize_limit_buy = round_step_size(
+                close - added_val,
+                tickf)
+
+            order_buy_limit = order(tickSize_limit_buy,SIDE_BUY, TRADE_QUANTITY, TRADE_SYMBOL)
+            if order_buy_limit:
                 in_position = True
 
                 # save buy trade in trade.csv
@@ -305,18 +298,20 @@ def on_message(ws, message):
 
                 
                 # create sell limit order
-                order_sell_limit = order(tickSize_limit,SIDE_SELL, TRADE_QUANTITY, TRADE_SYMBOL)
+                order_sell_limit = order(tickSize_limit_sell,SIDE_SELL, TRADE_QUANTITY, TRADE_SYMBOL)
 
                 # check if order had been placed
                 if order_sell_limit:
                     # save graph (post on twitter)
-                    # asyncio.run(twet_graph("buy",False))
+                    sf = "estimated gain :"+ str(added_val*(float(TRADE_QUANTITY)/float(config.FUTURE_LEVERAGE)))
+                    asyncio.run(twet_graph(sf,False))
                     print("success sell limit")
                 else:
                     print("fail sell limit")
             else:
                 print("fail buy")
-    asyncio.run(twet_graph("test",False))
+    if TEST:
+        asyncio.run(twet_graph("test",False)) # freezer
     
 ws = websocket.WebSocketApp(SOCKET, on_open=on_open, on_close=on_close, on_message=on_message)
 ws.run_forever()

@@ -31,7 +31,7 @@
 
 ## IMPORT
 
-      pip install python-binance websocket-client aiofiles pandas asyncio aiocsv numpy mplfinance tweepy
+      pip install python-binance websocket-client aiofiles pandas asyncio aiocsv numpy matplotlib mplfinance tweepy
       
 ## TWEETER API | Tweepy API V1.1
 
