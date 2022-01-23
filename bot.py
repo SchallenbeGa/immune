@@ -25,15 +25,16 @@ TEST = config.DEBUG
 sma_d = 2
 sma_l = 3
 # define the difference between buy/sell price
-added_val = 0.0008
+margin = 0.0002
 # contain id of sell limit order
 order_id = 0
 in_position = False
 
+test_price = 0
 # init client for binance api
-client = Client(config.API_KEY, config.API_SECRET, tld='com',testnet=config.DEBUG)
+client = Client(config.API_KEY, config.API_SECRET, tld='com',testnet=config.TESTNET)
 
-if TEST :
+if config.TESTNET :
     # use testnet wss
     SOCKET = "wss://testnet.binance.vision/ws/"+config.PAIR+"@kline_1m"
 else:
@@ -84,16 +85,16 @@ async def twet_graph(tweet_content,fav):
             inCandleTrade = False
             for y in range(len(trade)):
                 if (data.index.array[x].minute == trade.index.array[y].minute) & (data.index.array[x].hour == trade.index.array[y].hour) :
-                    if(trade['Type'][y]=="buy"):
+                    if(trade['Type'][y]=="BUY"):
                         if not inCandleTrade:
-                            buys.append(trade['Price'][y]-added_val)
+                            buys.append(trade['Price'][y]-margin)
                             inCandleTrade = True
                         else:
                             print("buy in same candle "+str(y))
                         n = True
                     else:
                         one_sell=True
-                        sells.append(trade['Price'][y]+added_val)
+                        sells.append(trade['Price'][y]+margin)
                         n = True
                 if len(buys)>len(sells):
                     sells.append(np.nan)
@@ -177,6 +178,7 @@ async def save_close(data):
 # place order on binance
 def order(limit,side, quantity=TRADE_QUANTITY, symbol=TRADE_SYMBOL):
     global order_id
+    order_id = 0
     try:
         # place limit order
         if config.FUTURE:
@@ -213,6 +215,54 @@ def order(limit,side, quantity=TRADE_QUANTITY, symbol=TRADE_SYMBOL):
         return False
     return True
 
+# strategy rsi
+def s_rsi(data):
+    sma = data['Close'][-sma_d:].mean()
+    sma_long = data['Close'][-sma_l:].mean()
+
+    if sma < sma_long :
+        return True
+    else:
+        return False
+
+def s_sma(data,close):
+    global sma_d,sma_l
+    sma = data['Close'][-sma_d:].mean()
+    sma_long = data['Close'][-sma_l:].mean()
+
+    if (close > sma) & (close < sma_long):
+        return True
+    else:
+        return False
+
+def signal(data,close):
+
+    switch={
+      1:s_sma(data,close),
+      2:s_rsi(data)
+      }
+    if switch.get(config.RISK,"Invalid input"):
+        print("good signal")
+        return True
+    else:
+        print("bad signal")
+    return False
+
+def is_order_filled(order_id):
+    if TEST : return True
+    if not order_id == 0:
+        if config.FUTURE:
+            if config.FUTURE_COIN:
+                sorder = client.futures_coin_get_order(symbol=TRADE_SYMBOL,orderId=order_id)
+            else:
+                sorder = client.futures_get_order(symbol=TRADE_SYMBOL,orderId=order_id)
+        else:
+            sorder = client.get_order(symbol=TRADE_SYMBOL,orderId=order_id)
+        # check if order is filled
+        if (sorder['status'] == 'FILLED'):
+            return True
+    return False
+
 # run save older data 
 asyncio.run(save_data())
 
@@ -223,8 +273,8 @@ def on_close(ws):
     print('closed connection')
 
 def on_message(ws, message):
-    global in_position,order_id,api,added_val,sma_d,sma_l
-
+    global in_position,order_id,api,margin,sma_d,sma_l,test_price
+    side_buy = True
     # retrieve last trade
     json_message = json.loads(message)  
     candle = json_message['k']
@@ -253,63 +303,41 @@ def on_message(ws, message):
     #print(df[['bids', 'asks']].head())
     print("current price :" + str(close))
     print("lower than : ",sma_long," higher than : ",sma)
-    # sell section
-    if in_position:
-        # retrieve sell limit order from binance
-        if config.FUTURE:
-            if config.FUTURE_COIN:
-                sorder = client.futures_coin_get_order(symbol=TRADE_SYMBOL,orderId=order_id)
-            else:
-                sorder = client.futures_get_order(symbol=TRADE_SYMBOL,orderId=order_id)
+    
+    if (order_id==0)|(is_order_filled(order_id)):
+
+        if order_id != 0:
+            side_buy = not side_buy
+       
+        if side_buy:
+            r_price = close-margin 
+            side = SIDE_BUY
         else:
-            sorder = client.get_order(symbol=TRADE_SYMBOL,orderId=order_id)
-        # check if order is filled
-        if (sorder['status'] == 'FILLED'):
-            in_position = False
+            r_price = close+margin 
+            side = SIDE_SELL
 
-            # save sell trade in trade.csv
-            asyncio.run(save_trade("sell",sorder['price']))
-
-            # save graph (tweet content,post on twitter)
-            asyncio.run(twet_graph(":)",False))
-
-        #else:  
-        #    print("waiting for sell : ",sorder)
-    else:
-    # buy section
-        if (close > sma) & (close < sma_long):
-            # defines the intervals that a price/stopPrice can be increased/decreased by
-            # https://binance-docs.github.io/apidocs/delivery/en/#filters
-            tickf = float(client.get_symbol_info(config.PAIR.upper())['filters'][0]["tickSize"])
-            tickSize_limit_sell = round_step_size(
-                close + added_val,
-                tickf)
-
-            tickSize_limit_buy = round_step_size(
-                close - added_val,
-                tickf)
-
-            order_buy_limit = order(tickSize_limit_buy,SIDE_BUY, TRADE_QUANTITY, TRADE_SYMBOL)
-            if order_buy_limit:
-                in_position = True
-
-                # save buy trade in trade.csv
-                asyncio.run(save_trade("buy",close))
-
-                
-                # create sell limit order
-                order_sell_limit = order(tickSize_limit_sell,SIDE_SELL, TRADE_QUANTITY, TRADE_SYMBOL)
-
-                # check if order had been placed
-                if order_sell_limit:
-                    # save graph (post on twitter)
-                    sf = "estimated gain :"+ str(added_val*(float(TRADE_QUANTITY)/float(config.FUTURE_LEVERAGE)))
-                    asyncio.run(twet_graph(sf,False))
-                    print("success sell limit")
+        if (signal(data,close)) | (not side_buy) :
+            print(order_id,test_price,r_price)
+            if TEST:
+                if test_price == 0 :
+                    asyncio.run(save_trade(side,close))
+                    order_id +=1
+                    test_price = close + margin
                 else:
-                    print("fail sell limit")
-            else:
-                print("fail buy")
+                    if close >= test_price:      
+                        asyncio.run(save_trade(side,close))
+                        order_id +=1
+                        test_price = r_price
+            else:   
+                tickf = float(client.get_symbol_info(config.PAIR.upper())['filters'][0]["tickSize"])
+                tickSize_limit = round_step_size(
+                    r_price,
+                    tickf)
+                order_limit = order(tickSize_limit,side, TRADE_QUANTITY, TRADE_SYMBOL)
+        else:
+            print("not good")
+    else:
+        print("wait for order to get filled")
     if TEST:
         asyncio.run(twet_graph("test",False)) # freezer
     
