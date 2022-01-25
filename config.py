@@ -10,12 +10,12 @@ A_T_S = 'rWQfTBOjgoH3dopJ0NhBkH053AtX9HvWrOZaXIUorVVwd'
 PAIR = 'xrpusdt'
 PAIR_S = 'usdt'
 PAIR_B = "xrp"
-QUANTITY = '20'
+QUANTITY = '100'
 #ENVIRONMENT
-DEBUG = True
+DEBUG = False
 TESTNET= False
 #FUTURE
-FUTURE = False
+FUTURE = True
 FUTURE_LEVERAGE = '10'
 FUTURE_COIN = False #wip
 # STRATEGY RISK
