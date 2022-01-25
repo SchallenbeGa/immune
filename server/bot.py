@@ -1,21 +1,9 @@
-import matplotlib
-matplotlib.use("Agg")
-import websocket, json, config, tweepy, aiofiles,pandas as pd,asyncio,numpy as np,mplfinance as mpf
+import websocket, json, config as config, aiofiles,pandas as pd,asyncio,numpy as np
 from binance.client import Client
 from binance.enums import *
+import free_module.bot_graph
 from binance.helpers import round_step_size
 from datetime import datetime
-
-# retrieve twitter keys
-consumer_key = config.C_KEY
-consumer_secret = config.C_SECRET
-access_token = config.A_T
-access_token_secret = config.A_T_S
-
-# set twitter api keys
-auth = tweepy.OAuthHandler(consumer_key, consumer_secret)
-auth.set_access_token(access_token, access_token_secret)
-api = tweepy.API(auth)
 
 TRADE_SYMBOL = config.PAIR.upper()
 TRADE_QUANTITY = config.QUANTITY
@@ -23,11 +11,13 @@ TEST = config.DEBUG
 
 side_buy = True
 
+path_trade = f'../data/trade.csv'
+path_data = f'../data/data.csv'
 # get average price for x last trade
 sma_d = 2
 sma_l = 3
 # define the difference between buy/sell price
-margin = 0.0008
+margin = config.MARGIN
 # contain id of sell limit order
 order_id = 0
 in_position = False
@@ -48,116 +38,20 @@ if config.FUTURE:
     SOCKET = "wss://fstream.binance.com/ws/"+config.PAIR+"@kline_1m"
     #client.API_URL = 'https://fapi.binance.com'
 
-# clear tst.csv/trade.csv
-with open("tst.csv", "w") as f: 
+# clear data.csv/trade.csv
+with open(path_data, "w") as f: 
     f.write("Date,Open,High,Low,Close,Volume")
 
-with open("trade.csv", "w") as f: 
+with open(path_trade, "w") as f: 
     f.write("Date,Type,Price,Quantity\n")
-
-# create/save graph with buy/sell indicators (& post on twitter) format PNG
-async def twet_graph(tweet_content,fav):
-
-    global api,sma_d
-
-    buys = []
-    sells = []
-
-    one_sell = False
-
-    print("start graph")
-
-    # retrieve chart data
-    data = pd.read_csv('tst.csv').set_index('Date')
-    data.index = pd.to_datetime(data.index,format="%Y-%m-%d %H:%M:%S")
-
-    # retrieve trade
-    trade = pd.read_csv('trade.csv').set_index('Date')
-    trade.index = pd.to_datetime(trade.index,format="%Y-%m-%d %H:%M:%S")
-
-    # create custom style for graph
-    s  = mpf.make_mpf_style(
-        base_mpf_style="yahoo",
-        facecolor="#282828",
-        gridcolor="#212121",
-        rc={'xtick.color':'#f8f8f8','ytick.color':'#f8f8f8','axes.labelcolor':'#f8f8f8'})
-
-    # check if there is at least 1 trade
-    if len(trade)>0 :
-        for x in range(len(data)):
-            n = False
-            inCandleTrade = False
-            for y in range(len(trade)):
-                if (data.index.array[x].minute == trade.index.array[y].minute) & (data.index.array[x].hour == trade.index.array[y].hour) :
-                    if(trade['Type'][y]=="BUY"):
-                        print("okay")
-                        if not inCandleTrade:
-                            buys.append(trade['Price'][y]-margin)
-                            inCandleTrade = True
-                        else:
-                            print("buy in same candle "+str(y))
-                        n = True
-                    else:
-                        one_sell=True
-                        sells.append(trade['Price'][y]+margin)
-                        n = True
-                if len(buys)>len(sells):
-                    sells.append(np.nan)
-                elif len(buys)<len(sells):
-                    buys.append(np.nan)
-            if not n:
-                buys.append(np.nan)
-                sells.append(np.nan)
-        print(len(data),len(buys),len(sells))
-        if one_sell :
-            apd = [
-                mpf.make_addplot(buys, scatter=True, markersize=120, marker=r'^', color='green'),
-                mpf.make_addplot(sells, scatter=True, markersize=120, marker=r'v', color='red')
-            ]
-        else:
-            apd = [mpf.make_addplot(buys, scatter=True, markersize=120, marker=r'^', color='green')]
-        fig,ax = mpf.plot(
-            data,
-            addplot=apd,
-            type='candle',
-            volume=True,
-            style=s,
-            mav=(sma_d,sma_l),
-            figscale=1,
-            figratio=(20,10),
-            datetime_format="%d %H:%M:%S",
-            xrotation=0,
-            returnfig=True)
-    else:  
-
-        fig,ax = mpf.plot(
-            data,
-            type='candle',
-            volume=True,
-            style=s,
-            mav=(sma_d,sma_l),
-            figscale=1,
-            figratio=(20,10),
-            datetime_format="%d %H:%M:%S",
-            xrotation=0,
-            returnfig=True)
-       
-    # save graph in png  
-    fig.savefig('tweettest.png',facecolor='#282828')    
-    # post graph on twitter and get id
-    if fav:
-        id = api.update_status_with_media(tweet_content,"tweettest.png").id
-        api.create_favorite(id)
-
-    print("save graph")
 
 # save trade form the bot in trade.csv
 async def save_trade(b_s,price):
-    async with aiofiles.open('trade.csv', mode='r') as f:
+    async with aiofiles.open(path_trade, mode='r') as f:
         contents = await f.read()
         current_time = datetime.now().strftime("%Y-%m-%d %H:%M")
         contents = contents+str(str(current_time)+","+str(b_s)+","+str(price)+","+str(TRADE_QUANTITY)+"\n")
-    async with aiofiles.open('trade.csv', mode='w') as f:
+    async with aiofiles.open(path_trade, mode='w') as f:
         await f.write(contents)
 
 # save older candle in tst.csv
@@ -166,18 +60,18 @@ async def save_data():
         klines = client.futures_historical_klines(config.PAIR.upper(), Client.KLINE_INTERVAL_1MINUTE, "2 hour ago UTC")
     else:
         klines = client.get_historical_klines(config.PAIR.upper(), Client.KLINE_INTERVAL_1MINUTE, "1 hour ago UTC")
-    async with aiofiles.open('tst.csv', mode='w') as f:
+    async with aiofiles.open(path_data, mode='w') as f:
         await f.write("Date,Open,High,Low,Close,Volume")
         for line in klines:
             await f.write(f'\n{datetime.fromtimestamp(line[0]/1000)}, {line[1]}, {line[2]}, {line[3]}, {line[4]},{line[5]}')
 
 # save last candle/close in tst.csv
 async def save_close(data):
-    async with aiofiles.open('tst.csv', mode='r') as f:
+    async with aiofiles.open(path_data, mode='r') as f:
         contents = await f.read()
         current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         contents = contents+"\n"+str(current_time)+","+str(data['o'])+","+str(data['h'])+","+str(data['l'])+","+str(data['c'])+","+str(data['v'])
-    async with aiofiles.open('tst.csv', mode='w') as f:
+    async with aiofiles.open(path_data, mode='w') as f:
         await f.write(contents)
 
 # place order on binance
@@ -296,7 +190,7 @@ def on_message(ws, message):
     asyncio.run(save_data())
 
     # asyncio.run(save_close(json_message['E'],candle))
-    data = pd.read_csv('tst.csv').set_index('Date')
+    data = pd.read_csv(path_data).set_index('Date')
     data.index = pd.to_datetime(data.index)
 
     # calculate moving average
@@ -349,7 +243,7 @@ def on_message(ws, message):
     else:
         print("wait for order to get filled")
     if TEST:
-        asyncio.run(twet_graph("test",False)) # freezer
+        asyncio.run(bot_graph.twet_graph("test",False)) # freezer
     
 ws = websocket.WebSocketApp(SOCKET, on_open=on_open, on_close=on_close, on_message=on_message)
 ws.run_forever()
