@@ -1,4 +1,4 @@
-import websocket, json, config as config, aiofiles,pandas as pd,asyncio,numpy as np
+import websocket, json, server.config as config, aiofiles,pandas as pd,asyncio,numpy as np
 from binance.client import Client
 from binance.enums import *
 import free_module.bot_graph
@@ -11,8 +11,8 @@ TEST = config.DEBUG
 
 side_buy = True
 
-path_trade = f'../data/trade.csv'
-path_data = f'../data/data.csv'
+path_trade = f'data/trade.csv'
+path_data = f'data/data.csv'
 # get average price for x last trade
 sma_d = 2
 sma_l = 3

@@ -1,5 +1,5 @@
 import tweepy
-import server.config
+import server.config as config
 
 # retrieve twitter keys
 consumer_key = config.C_KEY
