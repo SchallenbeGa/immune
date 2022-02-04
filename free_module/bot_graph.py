@@ -1,6 +1,6 @@
 import matplotlib,mplfinance as mpf,pandas as pd,numpy as np
 matplotlib.use("Agg")
-import free_module.bot_tweet
+from free_module.bot_tweet import *
 
 
 async def twet_graph(tweet_content,fav):
@@ -15,13 +15,13 @@ async def twet_graph(tweet_content,fav):
     print("start graph")
 
     # retrieve chart data
-    data = pd.read_csv(f'../data/data.csv').set_index('Date')
+    data = pd.read_csv(f'data/data.csv').set_index('Date')
     data.index = pd.to_datetime(data.index,format="%Y-%m-%d %H:%M:%S")
 
     # retrieve trade
-    trade = pd.read_csv(f'../data/trade.csv').set_index('Date')
+    trade = pd.read_csv(f'data/trade.csv').set_index('Date')
     trade.index = pd.to_datetime(trade.index,format="%Y-%m-%d %H:%M:%S")
-
+    #print(trade,data)
     # create custom style for graph
     s  = mpf.make_mpf_style(
         base_mpf_style="yahoo",
@@ -90,4 +90,4 @@ async def twet_graph(tweet_content,fav):
     # save graph in png  
     fig.savefig('tweettest.png',facecolor='#282828')
     if fav:
-        bot_tweet.post_graph(tweet_content)
+        post_graph(tweet_content)
