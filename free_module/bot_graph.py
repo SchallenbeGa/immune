@@ -35,6 +35,10 @@ async def twet_graph(tweet_content,fav):
             n = False
             inCandleTrade = False
             for y in range(len(trade)):
+                if trade.index[y].hour < data.index.array[0].hour: # remove old trade from plot
+                    trade.pop(y)
+                    print(trade.index[y].hour)
+                    print(data.index.array[0].hour)
                 if (data.index.array[x].minute == trade.index.array[y].minute) & (data.index.array[x].hour == trade.index.array[y].hour) :
                     if(trade['Type'][y]=="BUY"):
                         print("okay")
