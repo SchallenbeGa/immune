@@ -1,9 +1,8 @@
 import matplotlib,mplfinance as mpf,pandas as pd,numpy as np
 matplotlib.use("Agg")
-from free_module.bot_tweet import *
 
 
-async def twet_graph(tweet_content,fav):
+async def generate_graph():
 
     global api,sma_d
 
@@ -98,9 +97,7 @@ async def twet_graph(tweet_content,fav):
             datetime_format="%d %H:%M:%S",
             xrotation=0,
             returnfig=True)
-       
-    print("savegraph")
+
     # save graph in png  
     fig.savefig('tweettest.png',facecolor='#282828')
-    if fav:
-        post_graph(tweet_content)
+    print("savegraph")

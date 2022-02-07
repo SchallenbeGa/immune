@@ -4,7 +4,7 @@ from binance.client import Client
 from binance.enums import *
 from free_module.save_data import *
 from free_module.bot_graph import *
-
+from free_module.bot_tweet import *
 
 
 TRADE_SYMBOL = config.PAIR.upper()
@@ -12,6 +12,7 @@ TRADE_QUANTITY = config.QUANTITY
 TEST = config.DEBUG
 EXPIRE = False
 EXPIRE_DATE = 1660
+GRAPH = config.GRAPH
 
 PATH_TRADE = f'data/trade.csv'
 PATH_DATA = f'data/data.csv'
@@ -80,12 +81,12 @@ def order(limit,side, quantity=TRADE_QUANTITY, symbol=TRADE_SYMBOL):
                 quantity=TRADE_QUANTITY,
                 price=limit,
                 timeInForce=TIME_IN_FORCE_GTC)
-        print("sending order")
-        print(order)
-        order_id = order['orderId']
     except Exception as e:
         print("an exception occured - {}".format(e))
         return False
+    print("sending order")
+    print(order)
+    order_id = order['orderId']
     return True
 
 # strategy copy order book
@@ -157,9 +158,9 @@ def s_sma(data,close,risk,period):
     else :
         sma = data['Close'][-period:].mean()
         sma_long = data['Close'][-(period+1):].mean()
-        sma_long_x = data['Close'][-(period+2):].mean()
+        sma_long_x = data['Close'][-(period+3):].mean()
 
-    if (close > sma) & (close < sma_long) & (close > sma_long_x):
+    if (close > sma) & (close < sma_long) & (close < sma_long_x):
         return True
     
     print("sma_short:"+str(sma))
@@ -194,8 +195,13 @@ def is_order_filled(order_id_x):
         # check if order is filled
         if (sorder['status'] == 'FILLED'):
             if last_order != 0:
-                asyncio.run(save_trade(sorder['side'],sorder['price']))
-                if config.TWEET : asyncio.run(twet_graph(config.STRATEGY_NAME+"\n"+str(sorder['side']+":"+str(sorder['price'])),True)) # problem
+               # asyncio.run(save_trade(sorder['side'],sorder['price']))
+                if config.TWEET : 
+                    if GRAPH :
+                        asyncio.run(generate_graph()) # problem
+                        asyncio.run(post_graph(config.STRATEGY_NAME+"\n"+str(sorder['side']+":"+str(sorder['price']))))
+                    else:
+                        asyncio.run(post_twet(config.STRATEGY_NAME+"\n"+str(sorder['side']+":"+str(sorder['price']))))
                 order_id = 0
             last_order = 0
             return True
@@ -275,7 +281,7 @@ def on_message(ws, message):
     else:
         print("wait for order to get filled")
     if TEST:
-        asyncio.run(twet_graph(config.STRATEGY_NAME+"\n"+"test",False)) # freezer
+        asyncio.run(generate_graph()) # freezer
     
 ws = websocket.WebSocketApp(SOCKET, on_open=on_open, on_close=on_close, on_message=on_message)
 ws.run_forever()
