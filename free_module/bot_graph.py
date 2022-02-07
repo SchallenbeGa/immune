@@ -11,6 +11,7 @@ async def twet_graph(tweet_content,fav):
     sells = []
 
     one_sell = False
+    one_buy = False
 
     print("start graph")
 
@@ -30,43 +31,50 @@ async def twet_graph(tweet_content,fav):
         rc={'xtick.color':'#f8f8f8','ytick.color':'#f8f8f8','axes.labelcolor':'#f8f8f8'})
 
     # check if there is at least 1 trade
-    if len(trade)>0 :
+    if (len(trade)>0) & (trade.index.array[-1].hour >= data.index.array[0].hour):
         for x in range(len(data)):
             n = False
             inCandleTrade = False
             for y in range(len(trade)):
-                if trade.index[y].hour < data.index.array[0].hour: # remove old trade from plot
-                    trade.pop(y)
-                    print(trade.index[y].hour)
+                if trade.index.array[y].hour < data.index.array[0].hour: #remove old trade
+                    print(trade.index.array[y].hour)
                     print(data.index.array[0].hour)
-                if (data.index.array[x].minute == trade.index.array[y].minute) & (data.index.array[x].hour == trade.index.array[y].hour) :
-                    if(trade['Type'][y]=="BUY"):
-                        print("okay")
-                        if not inCandleTrade:
-                            buys.append(trade['Price'][y])
-                            inCandleTrade = True
+                else:
+                    print("here")
+                    if (data.index.array[x].minute == trade.index.array[y].minute) & (data.index.array[x].hour == trade.index.array[y].hour) :
+                        if(trade['Type'][y]=="BUY"):
+                            print("okay")
+                            if not inCandleTrade:
+                                buys.append(trade['Price'][y])
+                                one_buy = True
+                                inCandleTrade = True
+                            else:
+                                print("buy in same candle "+str(y))
+                            n = True
                         else:
-                            print("buy in same candle "+str(y))
-                        n = True
-                    else:
-                        one_sell=True
-                        sells.append(trade['Price'][y])
-                        n = True
-                if len(buys)>len(sells):
-                    sells.append(np.nan)
-                elif len(buys)<len(sells):
-                    buys.append(np.nan)
+                            one_sell=True
+                            sells.append(trade['Price'][y])
+                            n = True
+                    if len(buys)>len(sells):
+                        sells.append(np.nan)
+                    elif len(buys)<len(sells):
+                        buys.append(np.nan)
             if not n:
                 buys.append(np.nan)
                 sells.append(np.nan)
         print(len(data),len(buys),len(sells))
-        if one_sell :
+        print(buys)
+        print(sells)
+        if one_sell & one_buy :
             apd = [
                 mpf.make_addplot(buys, scatter=True, markersize=120, marker=r'^', color='green'),
                 mpf.make_addplot(sells, scatter=True, markersize=120, marker=r'v', color='red')
             ]
-        else:
+        elif one_sell:
+            apd = [mpf.make_addplot(sells, scatter=True, markersize=120, marker=r'v', color='red')]
+        elif one_buy :
             apd = [mpf.make_addplot(buys, scatter=True, markersize=120, marker=r'^', color='green')]
+
         fig,ax = mpf.plot(
             data,
             addplot=apd,
@@ -91,6 +99,7 @@ async def twet_graph(tweet_content,fav):
             xrotation=0,
             returnfig=True)
        
+    print("savegraph")
     # save graph in png  
     fig.savefig('tweettest.png',facecolor='#282828')
     if fav:

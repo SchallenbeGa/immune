@@ -19,7 +19,6 @@ PATH_DATA = f'data/data.csv'
 # clear data.csv/trade.csv
 with open(PATH_DATA, "w") as f: 
     f.write("Date,Open,High,Low,Close,Volume")
-
 with open(PATH_TRADE, "w") as f: 
     f.write("Date,Type,Price,Quantity\n")
 
@@ -230,10 +229,10 @@ def on_message(ws, message):
     data.index = pd.to_datetime(data.index)
 
     # retrieve last close price
-    close = float(candle['c'])
+    close = float(data['Close'][-1])
 
     print("strategy : " + str(config.STRATEGY_NAME))
-    print("current price :" + str(close))
+    print("current price :" + str(data['Close'][-1]))
     
     if (order_id==0)|(is_order_filled(order_id)):
         if side_buy:

@@ -6,9 +6,10 @@
 ## CONFIG.PY
 
    ### BINANCE
-    API_KEY = 'ndSdbjSmijYKFKLbo4fuq3MBaMHxA1sqcHeuawHro9SgRgXVctvJ0YvoozJl3'
-    API_SECRET = 'c5dnUZ3sD4G1OzMFzcLUtik7aoUleFzPbkyFPHjv8oPWUaaKeFO8TwegDvyU'
+    API_KEY = 'ndSdbjSmijYKsKabl4eue3nBcMuxl1eqcHeuawHro9SgRgXVctvJ0YvoozJl3'
+    API_SECRET = 'c5dnUZ3sD4G1OzMFzcLUtik7aoUleFzPbikmFmje8nPsUeadeeObTielDeyU'
    ### TWEETER
+    TWEET=True
     C_KEY = 'B16J2YTwEBIsXBBWZO42pC'
     C_SECRET = 'R8J9tUI4V0O4BmggOHQuwvHOgRUF1aYFvTlIc010SnD9fuR'
     A_T = '126528524811520-VtPzQN6E3NQsLtnJx91P1GwfYmXPwp'
@@ -20,9 +21,17 @@
     QUANTITY = '20'
    ### ENVIRONMENT
     DEBUG = True
+    TESTNET = False
    ### FUTURE
     FUTURE = True
     FUTURE_LEVERAGE = '1'
+    FUTURE_COIN = False (wip)
+   ### STRATEGY VAR
+    STRATEGY_NAME = "sma&rsi" # sma|rsi|orderbook
+    RISK = 1 safest (1-3)
+    PERIOD = 2 nb trade to anaylse
+   ### POSITION
+    MARGIN=0.0008
 
 ## COMMAND
 
