@@ -99,7 +99,7 @@ def is_order_filled(order_id_x):
         # check if order is filled
         if (sorder['status'] == 'FILLED'):
             if last_order != 0:
-                #asyncio.run(save_trade(sorder['side'],sorder['price'],QUANTITY))
+                asyncio.run(save_trade(sorder['side'],sorder['price'],QUANTITY))
                 if TWEET : 
                     if GRAPH :
                         asyncio.run(generate_graph()) # problem
@@ -109,11 +109,11 @@ def is_order_filled(order_id_x):
                 order_id = 0
             last_order = 0
             return True
-        elif (sorder['status'] == 'CANCELED'):
-            if not side_buy:
-                side_buy = True
-            last_order = 0
-            return True
+        # elif (sorder['status'] == 'CANCELED'):
+        #     if not side_buy:
+        #         side_buy = True
+        #     last_order = 0
+        #     return True
     return False
 
 # run save older data 
@@ -143,8 +143,8 @@ def on_message(ws, message):
 
     print("strategy : " + str(STRATEGY_NAME))
     print("current price :" + str(data['Close'][-1]))
-    
-    if (order_id==0)|(is_order_filled(order_id)):
+    # si il n'y a pas d'ordre en cours 
+    if (order_id==0)|(is_order_filled(order_id)): # todo : demix
         if side_buy:
             r_price = close-(MARGIN*0.2) # to lower buy limit
             side = SIDE_BUY
@@ -152,19 +152,9 @@ def on_message(ws, message):
             r_price = close+MARGIN 
             side = SIDE_SELL
             
-        if (signal(data,close,client)) | (not side_buy) :
-            #print(order_id,test_price,r_price)
-            if DEBUG:
-                if test_price == 0 :
-                    asyncio.run(save_trade(side,close,QUANTITY))
-                    order_id +=1
-                    test_price = close + MARGIN
-                else:
-                    if close >= test_price:      
-                        asyncio.run(save_trade(side,close,QUANTITY))
-                        order_id +=1
-                        test_price = r_price
-            else:  
+        if (signal(data,close,client)) | (not side_buy) : # todo : demix 
+            print(order_id,test_price,r_price)
+            if not DEBUG:
                 print("okay")
                 if s_order_price != 0:
                     tickSize_limit = s_order_price
@@ -174,10 +164,23 @@ def on_message(ws, message):
                         r_price,
                         tickf)
                 order_limit = order(tickSize_limit,side)
+                print(order_limit)
+            else:
+                if test_price == 0 :
+                    asyncio.run(save_trade(side,close,QUANTITY))
+                    order_id +=1
+                    test_price = close + MARGIN
+                else:
+                    if close >= test_price:      
+                        asyncio.run(save_trade(side,close,QUANTITY))
+                        order_id +=1
+                        test_price = r_price
+              
             if side_buy:
                 side_buy = False
             else:
                 side_buy = True
+
             last_order = order_id
             s_order_price = 0
         else:
