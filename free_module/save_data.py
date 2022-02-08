@@ -1,4 +1,4 @@
-import server.config as config,pandas as pd,aiofiles
+import aiofiles
 from binance.client import Client
 from datetime import datetime
 
@@ -6,20 +6,20 @@ PATH_TRADE = f'data/trade.csv'
 PATH_DATA = f'data/data.csv'
 
 # save trade form the bot in trade.csv
-async def save_trade(b_s,price):
+async def save_trade(b_s,price,quantity):
     async with aiofiles.open(PATH_TRADE, mode='r') as f:
         contents = await f.read()
-        current_time = datetime.now().strftime("%Y-%m-%d %H:%M")
-        contents = contents+str(str(current_time)+","+str(b_s)+","+str(price)+","+str(config.QUANTITY)+"\n")
+        current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        contents = contents+str(str(current_time)+","+str(b_s)+","+str(price)+","+str(quantity)+"\n")
     async with aiofiles.open(PATH_TRADE, mode='w') as f:
         await f.write(contents)
 
 # save older candle in tst.csv
-async def save_data(client):
-    if config.FUTURE: 
-        klines = client.futures_historical_klines(config.PAIR.upper(), Client.KLINE_INTERVAL_1MINUTE, "1 hour ago UTC")
+async def save_data(client,pair,future):
+    if future: 
+        klines = client.futures_historical_klines(pair, Client.KLINE_INTERVAL_1MINUTE, "2 hour ago UTC")
     else:
-        klines = client.get_historical_klines(config.PAIR.upper(), Client.KLINE_INTERVAL_1MINUTE, "1 hour ago UTC")
+        klines = client.get_historical_klines(pair, Client.KLINE_INTERVAL_1MINUTE, "1 hour ago UTC")
     async with aiofiles.open(PATH_DATA, mode='w') as f:
         await f.write("Date,Open,High,Low,Close,Volume")
         for line in klines:

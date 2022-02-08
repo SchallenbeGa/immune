@@ -1,15 +1,9 @@
 import tweepy
 import server.config as config
 
-# retrieve twitter keys
-consumer_key = config.C_KEY
-consumer_secret = config.C_SECRET
-access_token = config.A_T
-access_token_secret = config.A_T_S
-
 # set twitter api keys
-auth = tweepy.OAuthHandler(consumer_key, consumer_secret)
-auth.set_access_token(access_token, access_token_secret)
+auth = tweepy.OAuthHandler(config.C_KEY, config.C_SECRET)
+auth.set_access_token(config.A_T, config.A_T_S)
 api = tweepy.API(auth)
 
 # post graph on twitter and get id
