@@ -21,7 +21,7 @@ FUTURE = True
 FUTURE_LEVERAGE = '15'
 FUTURE_COIN = False # wip
 #STRATEGY VAR
-STRATEGY_NAME = "sma&rsi" # sma|rsi|orderbook
+STRATEGY_NAME = "sma" # sma|rsi|orderbook
 RISK = 3 # safest
 PERIOD = 2
 #POSITION

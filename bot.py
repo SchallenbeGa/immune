@@ -46,16 +46,16 @@ if FUTURE:
     #client.API_URL = 'https://fapi.binance.com'
 
 # place order on binance
-def order(limit,side, quantity=QUANTITY, symbol=TRADE_SYMBOL):
+def order(limit,side):
     global order_id
     order_id = 0
     try:
         # place limit order
         if FUTURE:
-            client.futures_change_leverage(symbol=symbol, leverage=FUTURE_LEVERAGE)
+            client.futures_change_leverage(symbol=TRADE_SYMBOL, leverage=FUTURE_LEVERAGE)
             if FUTURE_COIN: # COIN-M wip
                 order = client.futures_coin_create_order(
-                    symbol=symbol,
+                    symbol=TRADE_SYMBOL,
                     side=side,
                     type=FUTURE_ORDER_TYPE_LIMIT,
                     quantity=QUANTITY,
@@ -63,7 +63,7 @@ def order(limit,side, quantity=QUANTITY, symbol=TRADE_SYMBOL):
                     timeInForce=TIME_IN_FORCE_GTC)
             else: # USD-M
                 order = client.futures_create_order(
-                    symbol=symbol,
+                    symbol=TRADE_SYMBOL,
                     side=side,
                     type=FUTURE_ORDER_TYPE_LIMIT,
                     quantity=QUANTITY,
@@ -71,7 +71,7 @@ def order(limit,side, quantity=QUANTITY, symbol=TRADE_SYMBOL):
                     timeInForce=TIME_IN_FORCE_GTC)
         else: # SPOT BUY/SELL LIMIT
             order = client.create_order(
-                symbol=symbol,
+                symbol=TRADE_SYMBOL,
                 side=side,
                 type=ORDER_TYPE_LIMIT,
                 quantity=QUANTITY,
@@ -99,7 +99,7 @@ def is_order_filled(order_id_x):
         # check if order is filled
         if (sorder['status'] == 'FILLED'):
             if last_order != 0:
-                asyncio.run(save_trade(sorder['side'],sorder['price'],QUANTITY))
+                #asyncio.run(save_trade(sorder['side'],sorder['price'],QUANTITY))
                 if TWEET : 
                     if GRAPH :
                         asyncio.run(generate_graph()) # problem
@@ -173,7 +173,7 @@ def on_message(ws, message):
                     tickSize_limit = round_step_size(
                         r_price,
                         tickf)
-                order_limit = order(tickSize_limit,side, QUANTITY, TRADE_SYMBOL)
+                order_limit = order(tickSize_limit,side)
             if side_buy:
                 side_buy = False
             else:
