@@ -91,9 +91,15 @@ def order(limit,side):
     return True
 
 def smart_order():
+    #check if order take too long or instant crash
     orders = pd.read_csv(PATH_ORDER).set_index('Date')
     if len(orders) > 0:
         print(orders.index.array[-1])
+        delay = datetime.datetime.now() - datetime.timedelta(minutes=5)
+        if (orders.index.array[-1]<delay):
+            print("trade take long to execute")
+    info = client.futures_position_information(symbol=TRADE_SYMBOL)
+    print(info)
 
 def is_order_filled(order_id_x):
     global last_order,order_id,side_buy,buy_price
