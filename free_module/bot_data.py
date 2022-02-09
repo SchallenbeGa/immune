@@ -4,6 +4,7 @@ from datetime import datetime
 
 PATH_TRADE = f'data/trade.csv'
 PATH_DATA = f'data/data.csv'
+PATH_ORDER = f'data/order.csv'
 
 # save trade form the bot in trade.csv
 async def save_trade(b_s,price,quantity):
@@ -12,6 +13,14 @@ async def save_trade(b_s,price,quantity):
         current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         contents = contents+str(str(current_time)+","+str(b_s)+","+str(price)+","+str(quantity)+"\n")
     async with aiofiles.open(PATH_TRADE, mode='w') as f:
+        await f.write(contents)
+
+# save order form the bot in order.csv
+async def save_order(order_time,b_s,price,quantity,status,order_id):
+    async with aiofiles.open(PATH_ORDER, mode='r') as f:
+        contents = await f.read()
+        contents = contents+str(str(order_time)+","+str(status)+","+str(b_s)+","+str(price)+","+str(quantity)+","+str(order_id)+"\n")
+    async with aiofiles.open(PATH_ORDER, mode='w') as f:
         await f.write(contents)
 
 # save older candle in tst.csv

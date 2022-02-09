@@ -2,7 +2,7 @@ import websocket, json, pandas as pd, asyncio
 from binance.helpers import round_step_size
 from binance.client import Client
 from binance.enums import *
-from free_module.save_data import *
+from free_module.bot_data import *
 from free_module.bot_graph import *
 from free_module.bot_tweet import *
 from strategy.signal import *
@@ -16,12 +16,15 @@ TRADE_SYMBOL = PAIR.upper()
 
 PATH_TRADE = f'data/trade.csv'
 PATH_DATA = f'data/data.csv'
+PATH_ORDER = f'data/order.csv'
 
-# clear data.csv/trade.csv
+# clear data.csv/trade.csv/order.csv
 with open(PATH_DATA, "w") as f: 
     f.write("Date,Open,High,Low,Close,Volume")
 with open(PATH_TRADE, "w") as f: 
     f.write("Date,Type,Price,Quantity\n")
+with open(PATH_ORDER, "w") as f: 
+    f.write("Date,Type,Price,Quantity,OrderId\n")
 
 # contain id of sell limit order
 order_id = 0
@@ -32,6 +35,7 @@ s_order_price = 0
 last_order = 0
 
 test_price = 0
+buy_price = 0
 # init client for binance api
 client = Client(API_KEY, API_SECRET, tld='com',testnet=TESTNET)
 
@@ -86,7 +90,7 @@ def order(limit,side):
     return True
 
 def is_order_filled(order_id_x):
-    global last_order,order_id,side_buy
+    global last_order,order_id,side_buy,buy_price
     if DEBUG : return True
     if not order_id_x == 0:
         if FUTURE:
@@ -108,7 +112,9 @@ def is_order_filled(order_id_x):
                         asyncio.run(post_twet(STRATEGY_NAME+"\n"+str(sorder['side']+":"+str(sorder['price']))))
                 order_id = 0
             last_order = 0
+            buy_price = sorder['price']
             return True
+        
         # elif (sorder['status'] == 'CANCELED'):
         #     if not side_buy:
         #         side_buy = True
@@ -118,6 +124,7 @@ def is_order_filled(order_id_x):
 
 # run save older data 
 asyncio.run(save_data(client,TRADE_SYMBOL,FUTURE))
+tickf = float(client.get_symbol_info(TRADE_SYMBOL)['filters'][0]["tickSize"])
 
 def on_open(ws):
     print('opened connection')
@@ -126,7 +133,7 @@ def on_close(ws):
     print('closed connection')
 
 def on_message(ws, message):
-    global in_position,order_id,api,test_price,side_buy,last_order,s_order_price,client
+    global in_position,order_id,api,test_price,side_buy,last_order,s_order_price,client,buy_price
     # retrieve last trade
     json_message = json.loads(message)  
     candle = json_message['k']
@@ -149,7 +156,11 @@ def on_message(ws, message):
             r_price = close-(MARGIN*0.2) # to lower buy limit
             side = SIDE_BUY
         else:
-            r_price = close+MARGIN 
+            print(buy_price)
+            if buy_price != 0:
+                r_price = buy_price+MARGIN 
+            else:
+                r_price = buy_price+MARGIN 
             side = SIDE_SELL
             
         if (signal(data,close,client)) | (not side_buy) : # todo : demix 
@@ -159,12 +170,10 @@ def on_message(ws, message):
                 if s_order_price != 0:
                     tickSize_limit = s_order_price
                 else:
-                    tickf = float(client.get_symbol_info(TRADE_SYMBOL)['filters'][0]["tickSize"])
                     tickSize_limit = round_step_size(
                         r_price,
                         tickf)
                 order_limit = order(tickSize_limit,side)
-                print(order_limit)
             else:
                 if test_price == 0 :
                     asyncio.run(save_trade(side,close,QUANTITY))
