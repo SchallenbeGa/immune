@@ -24,7 +24,7 @@ with open(PATH_DATA, "w") as f:
 with open(PATH_TRADE, "w") as f: 
     f.write("Date,Type,Price,Quantity\n")
 with open(PATH_ORDER, "w") as f: 
-    f.write("Date,Type,Price,Quantity,OrderId\n")
+    f.write("Date,Status,Type,Price,Quantity,OrderId\n")
 
 # contain id of sell limit order
 order_id = 0
@@ -87,7 +87,13 @@ def order(limit,side):
     print("sending order")
     print(order)
     order_id = order['orderId']
+    asyncio.run(save_order(order['side'],order['price'],QUANTITY,order['status'],order_id))
     return True
+
+def smart_order():
+    orders = pd.read_csv(PATH_ORDER).set_index('Date')
+    if len(orders) > 0:
+        print(orders.index.array[-1])
 
 def is_order_filled(order_id_x):
     global last_order,order_id,side_buy,buy_price
@@ -101,19 +107,23 @@ def is_order_filled(order_id_x):
         else:
             sorder = client.get_order(symbol=TRADE_SYMBOL,orderId=order_id_x)
         # check if order is filled
-        if (sorder['status'] == 'FILLED'):
+        if (sorder['status'] == 'FILLED') | (sorder['status'] == 'CANCELED') :
             order_id = 0
             last_order = 0
             buy_price = sorder['price']
-            asyncio.run(save_trade(sorder['side'],sorder['price'],QUANTITY))
-            if TWEET : 
-                if GRAPH :
-                    asyncio.run(generate_graph()) # problem
-                    asyncio.run(post_graph(STRATEGY_NAME+"\n"+str(sorder['side']+":"+str(sorder['price']))))
-                else:
-                    asyncio.run(post_twet(STRATEGY_NAME+"\n"+str(sorder['side']+":"+str(sorder['price']))))
+            if (sorder['status'] == 'FILLED'):
+                asyncio.run(save_trade(sorder['side'],sorder['price'],QUANTITY))
+                if TWEET : 
+                    if GRAPH :
+                        asyncio.run(generate_graph()) # problem
+                        asyncio.run(post_graph(STRATEGY_NAME+"\n"+str(sorder['side']+":"+str(sorder['price']))))
+                    else:
+                        asyncio.run(post_twet(STRATEGY_NAME+"\n"+str(sorder['side']+":"+str(sorder['price']))))
+            else:
+                side_buy = True
+            asyncio.run(save_order(sorder['side'],sorder['price'],QUANTITY,sorder['status'],order_id_x))
             return True
-        asyncio.run(save_order(sorder['time'],sorder['side'],sorder['price'],QUANTITY,sorder['status'],order_id_x))
+        
         # elif (sorder['status'] == 'CANCELED'):
         #     if not side_buy:
         #         side_buy = True
@@ -134,10 +144,8 @@ def on_close(ws):
 def on_message(ws, message):
     global in_position,order_id,api,test_price,side_buy,last_order,s_order_price,client,buy_price
     # retrieve last trade
-    json_message = json.loads(message)  
-    candle = json_message['k']
-        
-    # run save older data 
+    json_message = json.loads(message)
+
     asyncio.run(save_data(client,TRADE_SYMBOL,FUTURE))
 
     # asyncio.run(save_close(json_message['E'],candle))
@@ -149,6 +157,9 @@ def on_message(ws, message):
 
     print("strategy : " + str(STRATEGY_NAME))
     print("current price :" + str(data['Close'][-1]))
+
+    smart_order()
+
     # si il n'y a pas d'ordre en cours 
     if (order_id==0)|(is_order_filled(order_id)): # todo : demix
         if side_buy:

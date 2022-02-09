@@ -11,7 +11,7 @@ A_T_S = 'rWQfTBOjgoH3dopJ0NhBkH053AtX9HvWrOZaXIUorVVwd'
 PAIR = 'xrpusdt'
 PAIR_S = 'usdt'
 PAIR_B = "xrp"
-QUANTITY = '270'
+QUANTITY = '300'
 GRAPH = False
 #ENVIRONMENT
 DEBUG = False

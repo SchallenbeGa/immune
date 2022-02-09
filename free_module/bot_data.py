@@ -16,14 +16,16 @@ async def save_trade(b_s,price,quantity):
         await f.write(contents)
 
 # save order form the bot in order.csv
-async def save_order(order_time,b_s,price,quantity,status,order_id):
+async def save_order(b_s,price,quantity,status,order_id):
     async with aiofiles.open(PATH_ORDER, mode='r') as f:
         contents = await f.read()
-        contents = contents+str(str(order_time)+","+str(status)+","+str(b_s)+","+str(price)+","+str(quantity)+","+str(order_id)+"\n")
+        current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        contents = contents+str(str(current_time)+","+str(status)+","+str(b_s)+","+str(price)+","+str(quantity)+","+str(order_id)+"\n")
     async with aiofiles.open(PATH_ORDER, mode='w') as f:
         await f.write(contents)
 
 # save older candle in tst.csv
+# todo : 2h & 1min
 async def save_data(client,pair,future):
     if future: 
         klines = client.futures_historical_klines(pair, Client.KLINE_INTERVAL_1MINUTE, "2 hour ago UTC")
