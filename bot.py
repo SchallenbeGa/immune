@@ -163,7 +163,7 @@ def on_message(ws, message):
                 r_price = buy_price+MARGIN 
             side = SIDE_SELL
             
-        if (signal(data,close,client)) | (not side_buy) : # todo : demix 
+        if (signal(data,close,client,side_buy)) : # todo : demix 
             print(order_id,test_price,r_price)
             if not DEBUG:
                 print("okay")

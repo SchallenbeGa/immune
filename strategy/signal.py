@@ -7,14 +7,10 @@ from strategy.s_sma import *
 multi = True # combine strategy
 
 
-def signal(data,close,client):
+def signal(data,close,client,side_buy):
     # multi strategy signal
-   
-    if multi:
-        if s_sma(data,close,RISK,PERIOD):
-            return True
-
-    elif STRATEGY_NAME == "sma":
+    if not side_buy : return True
+    if STRATEGY_NAME == "sma":
         return s_sma(data,close,RISK,PERIOD)
     elif STRATEGY_NAME == "rsi":
         return s_rsi(data,RISK,PERIOD)
