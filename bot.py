@@ -105,8 +105,15 @@ def is_order_filled(order_id_x):
             order_id = 0
             last_order = 0
             buy_price = sorder['price']
+            asyncio.run(save_trade(sorder['side'],sorder['price'],QUANTITY))
+            if TWEET : 
+                if GRAPH :
+                    asyncio.run(generate_graph()) # problem
+                    asyncio.run(post_graph(STRATEGY_NAME+"\n"+str(sorder['side']+":"+str(sorder['price']))))
+                else:
+                    asyncio.run(post_twet(STRATEGY_NAME+"\n"+str(sorder['side']+":"+str(sorder['price']))))
             return True
-        
+        asyncio.run(save_order(sorder['time'],sorder['side'],sorder['price'],QUANTITY,sorder['status'],order_id_x))
         # elif (sorder['status'] == 'CANCELED'):
         #     if not side_buy:
         #         side_buy = True
@@ -155,10 +162,9 @@ def on_message(ws, message):
             else:
                 r_price = close+MARGIN 
             side = SIDE_SELL
-        print("before signal")
+
         if (signal(data,close,client,side_buy)) : # todo : demix 
-            print("after signal")
-            print(order_id,test_price,r_price)
+            #print(order_id,test_price,r_price)
             if not DEBUG:
                 print("okay")
                 if s_order_price != 0:

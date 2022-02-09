@@ -25,4 +25,4 @@ STRATEGY_NAME = "sma" # sma|rsi|orderbook
 RISK = 3 # safest
 PERIOD = 2
 #POSITION
-MARGIN=0.0005
+MARGIN=0.0008
