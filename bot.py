@@ -102,15 +102,7 @@ def is_order_filled(order_id_x):
             sorder = client.get_order(symbol=TRADE_SYMBOL,orderId=order_id_x)
         # check if order is filled
         if (sorder['status'] == 'FILLED'):
-            if last_order != 0:
-                asyncio.run(save_trade(sorder['side'],sorder['price'],QUANTITY))
-                if TWEET : 
-                    if GRAPH :
-                        asyncio.run(generate_graph()) # problem
-                        asyncio.run(post_graph(STRATEGY_NAME+"\n"+str(sorder['side']+":"+str(sorder['price']))))
-                    else:
-                        asyncio.run(post_twet(STRATEGY_NAME+"\n"+str(sorder['side']+":"+str(sorder['price']))))
-                order_id = 0
+            order_id = 0
             last_order = 0
             buy_price = sorder['price']
             return True
@@ -198,6 +190,6 @@ def on_message(ws, message):
         print("wait for order to get filled")
     if DEBUG:
         asyncio.run(generate_graph()) # freezer
-    
+    print("#################")
 ws = websocket.WebSocketApp(SOCKET, on_open=on_open, on_close=on_close, on_message=on_message)
 ws.run_forever()

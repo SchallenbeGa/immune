@@ -14,12 +14,11 @@ def s_sma(data,close,risk,period):
         sma = data['Close'][-period:].mean()
         sma_long = data['Close'][-(period+1):].mean()
         sma_long_x = data['Close'][-(period+3):].mean()
-    
+
     print("-----------------")
     print("sma_short:"+str(sma))
     print("sma_long:"+str(sma_long))
     print("sma_long_x:"+str(sma_long_x))
-    print("#################")
     if (close > sma) & (close < sma_long) & (close < sma_long_x):
         return True
     
