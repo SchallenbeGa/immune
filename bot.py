@@ -150,12 +150,14 @@ def on_message(ws, message):
         else:
             print(buy_price)
             if buy_price != 0:
-                r_price = buy_price+MARGIN 
+                r_price = float(buy_price)+float(MARGIN) 
+                print(r_price)
             else:
-                r_price = buy_price+MARGIN 
+                r_price = close+MARGIN 
             side = SIDE_SELL
-            
+        print("before signal")
         if (signal(data,close,client,side_buy)) : # todo : demix 
+            print("after signal")
             print(order_id,test_price,r_price)
             if not DEBUG:
                 print("okay")
