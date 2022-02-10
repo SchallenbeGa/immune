@@ -1,4 +1,5 @@
 import websocket, json, pandas as pd, asyncio
+from datetime import datetime, timedelta
 from binance.helpers import round_step_size
 from binance.client import Client
 from binance.enums import *
@@ -92,14 +93,17 @@ def order(limit,side):
 
 def smart_order():
     #check if order take too long or instant crash
+    info = client.futures_position_information(symbol=TRADE_SYMBOL)
     orders = pd.read_csv(PATH_ORDER).set_index('Date')
+    orders.index = pd.to_datetime(orders.index)
     if len(orders) > 0:
         print(orders.index.array[-1])
-        delay = datetime.datetime.now() - datetime.timedelta(minutes=5)
-        if (orders.index.array[-1]<delay):
-            print("trade take long to execute")
-    info = client.futures_position_information(symbol=TRADE_SYMBOL)
-    print(info)
+        delay = datetime.now() - timedelta(minutes=5)
+        print(delay)
+        if (orders.index.array[-1] < delay):
+             print("5 minutes..")
+        #if info['markPrice'] < (info['entryPrice']-(info['entryPrice']*0.10)):
+        #    print("dangerous")
 
 def is_order_filled(order_id_x):
     global last_order,order_id,side_buy,buy_price
