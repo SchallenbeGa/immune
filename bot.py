@@ -1,4 +1,4 @@
-import websocket, json, pandas as pd, asyncio
+import telegram_send, websocket, json, pandas as pd, asyncio
 from datetime import datetime, timedelta
 from binance.helpers import round_step_size
 from binance.client import Client
@@ -10,6 +10,8 @@ from strategy.signal import *
 from server.config import *
 
 TRADE_SYMBOL = PAIR.upper()
+
+
 
 # WIP : time to cancel order
 # EXPIRE = False
@@ -129,6 +131,8 @@ def is_order_filled(order_id_x):
                         asyncio.run(post_graph(STRATEGY_NAME+"\n"+str(sorder['side']+":"+str(sorder['price']))))
                     else:
                         asyncio.run(post_twet(STRATEGY_NAME+"\n"+str(sorder['side']+":"+str(sorder['price']))))
+                if TELEGRAM :
+                        telegram_send.send(messages=[STRATEGY_NAME+"\n"+str(sorder['side']+":"+str(sorder['price']))])
             else:
                 side_buy = True
             asyncio.run(save_order(sorder['side'],sorder['price'],QUANTITY,sorder['status'],order_id_x))
