@@ -14,6 +14,12 @@
     C_SECRET = 'R8J9tUI4V0O4BmggOHQuwvHOgRUF1aYFvTlIc010SnD9fuR'
     A_T = '126528524811520-VtPzQN6E3NQsLtnJx91P1GwfYmXPwp'
     A_T_S = 'rWQfTH3dopJ0NhBkH053AtX9HvWrOZaXIUorVVwd'
+   ### TELEGRAM
+   * To get Telegram module, please follow this tutorial : https://www.siteguarding.com/en/how-to-get-telegram-bot-api-token
+   * When you got your TOKEN, open terminal and run : telegram-send --configure
+   * Go to server/config.py and turn TELEGRAM=False to True
+   * Enjoy :)
+   
    ### VAR
     PAIR = 'bnbusdt'
     PAIR_S = 'usdt'
