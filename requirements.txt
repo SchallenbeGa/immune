@@ -8,3 +8,4 @@ numpy
 mplfinance
 tweepy
 matplotlib
+telegram-send
