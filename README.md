@@ -16,7 +16,8 @@
     A_T_S = 'rWQfTH3dopJ0NhBkH053AtX9HvWrOZaXIUorVVwd'
    ### TELEGRAM
    * To get Telegram module, please follow this tutorial : https://www.siteguarding.com/en/how-to-get-telegram-bot-api-token
-   * When you got your TOKEN, open terminal and run : telegram-send --configure
+   * When you got your TOKEN, open terminal and run : 
+    telegram-send --configure
    * Go to server/config.py and turn TELEGRAM=False to True
    * Enjoy :)
    
