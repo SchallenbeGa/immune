@@ -125,6 +125,8 @@ def is_order_filled(order_id_x):
             buy_price = sorder['price']
             if (sorder['status'] == 'FILLED'):
                 asyncio.run(save_trade(sorder['side'],sorder['price'],QUANTITY))
+                #if (sorder['side'] == "BUY") & (STOP_LOSS):
+                    #place stop loss order
                 if TWEET : 
                     if GRAPH :
                         asyncio.run(generate_graph()) # problem
