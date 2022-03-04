@@ -79,6 +79,7 @@ click on app and replace "setting" by "auth-settings" in url,
  * https://github.com/matplotlib/mplfinance
  * https://docs.tweepy.org/en/stable/
 ## TODO
-   
+   * CREATE API FOR ANDROID APP
+   * ESTIMATE FEE COST
    * COINPICKER WITH PARAMETER
    * STOP LOSS = FEES + MARGIN/2
