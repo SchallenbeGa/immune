@@ -78,3 +78,6 @@ click on app and replace "setting" by "auth-settings" in url,
  * https://pypi.org/project/asyncio/
  * https://github.com/matplotlib/mplfinance
  * https://docs.tweepy.org/en/stable/
+## TODO
+   
+   STOP LOSS = FEES + MARGIN/2
