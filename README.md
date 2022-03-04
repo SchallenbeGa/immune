@@ -80,4 +80,5 @@ click on app and replace "setting" by "auth-settings" in url,
  * https://docs.tweepy.org/en/stable/
 ## TODO
    
-   STOP LOSS = FEES + MARGIN/2
+   * COINPICKER WITH PARAMETER
+   * STOP LOSS = FEES + MARGIN/2
