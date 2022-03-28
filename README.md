@@ -85,3 +85,4 @@ click on app and replace "setting" by "auth-settings" in url,
    * COINPICKER WITH PARAMETER
    * STOP LOSS = FEES + MARGIN/2
    * ESTIMATE BENEFIT WITH PERIOD (EX : 10% IN 2 DAYS)
+   * LIMIT POSITION PRICE AT 10% OF WALLET BALANCE
