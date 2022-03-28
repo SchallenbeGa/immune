@@ -83,3 +83,4 @@ click on app and replace "setting" by "auth-settings" in url,
    * ESTIMATE FEE COST
    * COINPICKER WITH PARAMETER
    * STOP LOSS = FEES + MARGIN/2
+   * ESTIMATE BENEFIT WITH PERIOD (EX : 10% IN 2 DAYS)
