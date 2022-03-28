@@ -2,6 +2,7 @@
 
 * warning : use at ur own fckn risk
 * take care of fees : https://www.binance.com/en/fee/schedule (login to see your fee level)
+* api need full access except withdraw
 
 ## CONFIG.PY
 
