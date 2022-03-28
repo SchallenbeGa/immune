@@ -26,7 +26,7 @@
     PAIR = 'bnbusdt'
     PAIR_S = 'usdt'
     PAIR_B = "bnb"
-    QUANTITY = '20'
+    QUANTITY = '20' # SHOULD NEVER BE MORE THAN 10% OF WALLET !
    ### ENVIRONMENT
     DEBUG = True
     TESTNET = False
